@@ -1,0 +1,23 @@
+{
+  "pin_fail": {
+    "sounds": ["lockscontinue:pin_fail"]
+  },
+  "pin_finish": {
+    "sounds": ["lockscontinue:pin_finish"]
+  },
+  "lock_rattle": {
+    "sounds": ["lockscontinue:lock_rattle"]
+  },
+  "lock_open": {
+    "sounds": ["lockscontinue:lock_open"]
+  },
+  "card_fail": {
+    "sounds": ["lockscontinue:card_fail"]
+  },
+  "card_flip": {
+    "sounds": ["lockscontinue:card_flip"]
+  },
+  "card_win": {
+    "sounds": ["lockscontinue:crad_win"]
+  }
+}

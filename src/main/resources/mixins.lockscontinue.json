@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.kaleblangley.lockscontinue.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "RandomizableContainerBlockEntityMixin",
+    "BlockEntityMixin"
+  ],
+  "client": [
+    "LevelRendererMixin",
+    "BlockEntityClientMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "mixins.lockscontinue.refmap.json"
+}

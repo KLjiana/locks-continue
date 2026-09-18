@@ -7,7 +7,7 @@ group = mod_group_id
 version = mod_version
 
 base {
-    archivesName = mod_name
+    archivesName = "${mod_name}-${minecraft_version}-forge"
 }
 
 java {
@@ -73,6 +73,8 @@ repositories {
 
 dependencies {
     compileOnly 'org.jetbrains:annotations:24.0.1'
+    modImplementation("curse.maven:lootr-361276:7263076")
+    modRuntimeOnly("curse.maven:jei-238222:8895264")
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 

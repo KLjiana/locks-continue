@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "NN ",
+    "   "
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    }
+  },
+  "result": {
+    "item": "lockscontinue:netherite_pick_gun",
+    "count": 1
+  }
+}
