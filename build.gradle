@@ -65,6 +65,7 @@ legacyForge {
 }
 
 repositories {
+    mavenCentral()
     maven { url = "https://maven.theillusivec4.top/" }
     maven { url "https://maven.shedaniel.me/" }
     maven { url 'https://jitpack.io' }
@@ -76,6 +77,12 @@ dependencies {
     modImplementation("curse.maven:lootr-361276:7263076")
     modRuntimeOnly("curse.maven:jei-238222:8895264")
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 mixin {

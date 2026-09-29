@@ -18,7 +18,7 @@ public record LockAction(LockActionType type, int first, int second, float value
         return new LockAction(LockActionType.ROTARY_ATTEMPT, 0, 0, angle, new int[0]);
     }
 
-    public static LockAction memorySubmit(int[] order) {
-        return new LockAction(LockActionType.MEMORY_SUBMIT, 0, 0, 0.0F, order.clone());
+    public static LockAction memoryPair(int first, int second) {
+        return new LockAction(LockActionType.MEMORY_PAIR, first, second, 0.0F, new int[0]);
     }
 }

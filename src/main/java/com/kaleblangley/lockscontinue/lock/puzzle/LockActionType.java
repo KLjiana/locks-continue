@@ -6,5 +6,5 @@ public enum LockActionType {
     PIN_SET,
     PIPE_ROTATE,
     ROTARY_ATTEMPT,
-    MEMORY_SUBMIT
+    MEMORY_PAIR
 }
