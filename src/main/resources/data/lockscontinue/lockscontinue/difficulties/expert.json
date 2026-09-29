@@ -1,0 +1,9 @@
+{
+  "rank": 4,
+  "display_color": "#C75BCB",
+  "failure": { "mistakes": 3, "durability_cost": 2 },
+  "pin": { "pin_count": 7, "set_tolerance_ticks": 1, "apex_hold_ticks": 1, "speed_variance": 1.3, "reset_locked_pins": 5 },
+  "pipe": { "width": 7, "height": 7, "terminal_count": 4, "minimum_solution_rotations": 18, "maximum_solution_rotations": 28, "minimum_route_cells": 24, "minimum_filled_cells": 47, "minimum_junctions": 10, "minimum_dead_ends": 0, "require_all_connected": false, "forbid_leaks": false, "hint_count": 0, "time_limit_ticks": 1200 },
+  "rotary": { "sweet_spot_degrees": 5.0, "feedback_falloff": 2.2 },
+  "memory": { "rows": 6, "columns": 8, "preview_ticks": 30, "preview_ticks_per_pair": 2, "mismatch_limit": 4, "mistakes": 4, "hint_count": 0 }
+}

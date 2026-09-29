@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "rules": [
+    {
+      "match": {
+        "lock_types": [
+          "lockscontinue:pin",
+          "lockscontinue:rotary",
+          "lockscontinue:memory"
+        ]
+      },
+      "metric": "mistakes_used",
+      "failure_at": 4,
+      "tiers": [
+        { "max": 0, "source_rolls": 2 },
+        { "max": 1, "source_rolls": 1 },
+        { "max": 3, "source_rolls": 1 }
+      ]
+    },
+    {
+      "match": { "lock_types": ["lockscontinue:pipe"] },
+      "metric": "time_ticks",
+      "failure_at": -1,
+      "tiers": [
+        { "max": 240, "source_rolls": 2 },
+        { "max": 600, "source_rolls": 1 }
+      ]
+    }
+  ]
+}

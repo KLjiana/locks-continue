@@ -1,0 +1,12 @@
+{
+  "pool": "lockscontinue:common",
+  "weight": 1,
+  "min_rank": 1,
+  "max_rank": 5,
+  "lock_types": [
+    "lockscontinue:pin"
+  ],
+  "flags": {
+    "pin_variable_speed": true
+  }
+}

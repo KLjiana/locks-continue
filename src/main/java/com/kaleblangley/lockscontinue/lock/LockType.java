@@ -1,7 +1,9 @@
 package com.kaleblangley.lockscontinue.lock;
 
-import com.kaleblangley.lockscontinue.item.ModItems;
+import com.kaleblangley.lockscontinue.LocksContinue;
+import com.kaleblangley.lockscontinue.lock.definition.LockDefinitionManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 /** The four lock kinds. Every registered lockpick can operate every kind. */
@@ -13,10 +15,12 @@ public enum LockType {
 
     private final int variant;
     private final String id;
+    private final ResourceLocation resourceId;
 
     LockType(int variant, String id) {
         this.variant = variant;
         this.id = id;
+        this.resourceId = new ResourceLocation(LocksContinue.MODID, id.replace("_lock", ""));
     }
 
     public int variant() {
@@ -25,6 +29,11 @@ public enum LockType {
 
     public String id() {
         return id;
+    }
+
+    /** Stable namespaced ID used by LockInstance and data packs. */
+    public ResourceLocation resourceId() {
+        return resourceId;
     }
 
     public Component displayName() {
@@ -37,26 +46,11 @@ public enum LockType {
      * restrict which lock kind the tool can open.
      */
     public static int toolStrength(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return 0;
-        }
-        if (stack.is(ModItems.WOOD_COMB.get())) {
-            return 1;
-        }
-        if (stack.is(ModItems.IRON_WRENCH.get())) {
-            return 2;
-        }
-        if (stack.is(ModItems.DIAMOND_WRENCH.get())) {
-            return 3;
-        }
-        if (stack.is(ModItems.NETHERITE_PICK_GUN.get())) {
-            return 4;
-        }
-        return 0;
+        return LockDefinitionManager.INSTANCE.lockpickStats(stack).strength();
     }
 
     public boolean canOpen(ItemStack stack) {
-        return toolStrength(stack) > 0;
+        return LockDefinitionManager.INSTANCE.isLockpick(stack);
     }
 
     public static LockType fromVariant(int variant) {
@@ -66,5 +60,19 @@ public enum LockType {
             case 2 -> PIPE_LOCK;
             default -> ROTARY_LOCK;
         };
+    }
+
+    /** Accepts the new ID and the old *_lock path for migration compatibility. */
+    public static LockType fromResourceId(ResourceLocation id) {
+        if (id != null) {
+            for (LockType type : values()) {
+                if (type.resourceId.equals(id)
+                        || (LocksContinue.MODID.equals(id.getNamespace())
+                        && type.id.equals(id.getPath()))) {
+                    return type;
+                }
+            }
+        }
+        return MEMORY_LOCK;
     }
 }

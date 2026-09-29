@@ -1,0 +1,8 @@
+{
+  "priority": 20,
+  "match": { "loot_tables": ["minecraft:chests/village/*"] },
+  "lock_chance": 0.8,
+  "lock_types": { "lockscontinue:pin": 3, "lockscontinue:memory": 1 },
+  "difficulties": { "lockscontinue:simple": 3, "lockscontinue:normal": 1 },
+  "affix_count": { "min": 0, "max": 0 }
+}

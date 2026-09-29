@@ -1,0 +1,14 @@
+{
+  "priority": 21,
+  "match": { "loot_tables": ["minecraft:chests/underwater_ruin_small"] },
+  "lock_chance": 0.45,
+  "lock_types": {
+    "lockscontinue:pin": 3,
+    "lockscontinue:memory": 1
+  },
+  "difficulties": {
+    "lockscontinue:simple": 3,
+    "lockscontinue:normal": 1
+  },
+  "affix_count": { "min": 0, "max": 0 }
+}

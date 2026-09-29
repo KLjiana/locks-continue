@@ -1,0 +1,19 @@
+{
+  "priority": 28,
+  "match": { "loot_tables": ["minecraft:chests/village/village_toolsmith"] },
+  "lock_chance": 0.85,
+  "lock_types": {
+    "lockscontinue:pipe": 2,
+    "lockscontinue:rotary": 1,
+    "lockscontinue:pin": 1,
+    "lockscontinue:memory": 1
+  },
+  "difficulties": {
+    "lockscontinue:simple": 1,
+    "lockscontinue:normal": 3,
+    "lockscontinue:hard": 1
+  },
+  "affix_count": { "min": 0, "max": 1 },
+  "affix_chance": 0.25,
+  "affix_pool": "lockscontinue:common"
+}

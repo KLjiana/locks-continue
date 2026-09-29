@@ -1,0 +1,8 @@
+{
+  "pool": "lockscontinue:common",
+  "weight": 1,
+  "min_rank": 2,
+  "max_rank": 5,
+  "lock_types": ["lockscontinue:pin"],
+  "add": { "pin.reset_locked_pins": 5 }
+}

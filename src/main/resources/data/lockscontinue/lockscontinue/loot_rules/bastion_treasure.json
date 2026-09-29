@@ -1,0 +1,17 @@
+{
+  "priority": 80,
+  "match": { "loot_tables": ["minecraft:chests/bastion_treasure"] },
+  "lock_chance": 0.95,
+  "lock_types": {
+    "lockscontinue:rotary": 2,
+    "lockscontinue:memory": 2,
+    "lockscontinue:pipe": 1
+  },
+  "difficulties": {
+    "lockscontinue:expert": 3,
+    "lockscontinue:master": 1
+  },
+  "affix_count": { "min": 1, "max": 2 },
+  "affix_chance": 0.75,
+  "affix_pool": "lockscontinue:ancient"
+}

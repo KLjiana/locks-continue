@@ -1,0 +1,8 @@
+{
+  "pool": "lockscontinue:ancient",
+  "weight": 2,
+  "min_rank": 3,
+  "max_rank": 5,
+  "lock_types": ["lockscontinue:pipe"],
+  "add": { "pipe.minimum_turns": 5, "pipe.maximum_solution_rotations": 7, "pipe.minimum_route_cells": 4, "pipe.minimum_filled_cells": 2 }
+}

@@ -1,0 +1,14 @@
+{
+  "priority": 25,
+  "match": { "loot_tables": ["minecraft:chests/shipwreck_*"] },
+  "lock_chance": 0.55,
+  "lock_types": {
+    "lockscontinue:pin": 3,
+    "lockscontinue:memory": 1
+  },
+  "difficulties": {
+    "lockscontinue:simple": 2,
+    "lockscontinue:normal": 2
+  },
+  "affix_count": { "min": 0, "max": 0 }
+}

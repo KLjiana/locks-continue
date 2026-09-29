@@ -1,0 +1,19 @@
+{
+  "priority": 30,
+  "match": { "loot_tables": ["minecraft:chests/ruined_portal"] },
+  "lock_chance": 0.55,
+  "lock_types": {
+    "lockscontinue:pin": 2,
+    "lockscontinue:rotary": 1,
+    "lockscontinue:pipe": 1,
+    "lockscontinue:memory": 1
+  },
+  "difficulties": {
+    "lockscontinue:simple": 1,
+    "lockscontinue:normal": 3,
+    "lockscontinue:hard": 1
+  },
+  "affix_count": { "min": 0, "max": 1 },
+  "affix_chance": 0.25,
+  "affix_pool": "lockscontinue:common"
+}

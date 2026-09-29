@@ -1,0 +1,19 @@
+{
+  "priority": 35,
+  "match": { "loot_tables": ["minecraft:chests/simple_dungeon"] },
+  "lock_chance": 0.65,
+  "lock_types": {
+    "lockscontinue:pin": 2,
+    "lockscontinue:pipe": 1,
+    "lockscontinue:memory": 1,
+    "lockscontinue:rotary": 1
+  },
+  "difficulties": {
+    "lockscontinue:simple": 2,
+    "lockscontinue:normal": 2,
+    "lockscontinue:hard": 1
+  },
+  "affix_count": { "min": 0, "max": 1 },
+  "affix_chance": 0.3,
+  "affix_pool": "lockscontinue:common"
+}

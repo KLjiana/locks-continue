@@ -1,0 +1,17 @@
+{
+  "priority": 45,
+  "match": { "loot_tables": ["minecraft:chests/shipwreck_treasure"] },
+  "lock_chance": 0.8,
+  "lock_types": {
+    "lockscontinue:rotary": 2,
+    "lockscontinue:memory": 1,
+    "lockscontinue:pipe": 1
+  },
+  "difficulties": {
+    "lockscontinue:normal": 3,
+    "lockscontinue:hard": 1
+  },
+  "affix_count": { "min": 0, "max": 1 },
+  "affix_chance": 0.4,
+  "affix_pool": "lockscontinue:common"
+}

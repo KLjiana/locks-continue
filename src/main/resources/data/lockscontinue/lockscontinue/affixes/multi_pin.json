@@ -1,0 +1,8 @@
+{
+  "pool": "lockscontinue:ancient",
+  "weight": 2,
+  "min_rank": 2,
+  "max_rank": 5,
+  "lock_types": ["lockscontinue:pin"],
+  "add": { "pin.count": 1 }
+}

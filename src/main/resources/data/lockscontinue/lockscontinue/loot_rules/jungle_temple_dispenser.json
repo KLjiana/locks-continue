@@ -1,0 +1,6 @@
+{
+  "priority": 60,
+  "match": { "loot_tables": ["minecraft:chests/jungle_temple_dispenser"] },
+  "lock_chance": 0.0,
+  "affix_count": { "min": 0, "max": 0 }
+}

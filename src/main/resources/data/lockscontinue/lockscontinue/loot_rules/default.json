@@ -1,0 +1,12 @@
+{
+  "priority": -100000,
+  "lock_chance": 1.0,
+  "lock_types": {
+    "lockscontinue:pin": 1,
+    "lockscontinue:pipe": 1,
+    "lockscontinue:rotary": 1,
+    "lockscontinue:memory": 1
+  },
+  "difficulties": { "lockscontinue:normal": 1 },
+  "affix_count": { "min": 0, "max": 0 }
+}

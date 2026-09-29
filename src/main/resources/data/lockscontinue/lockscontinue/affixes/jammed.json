@@ -1,0 +1,11 @@
+{
+  "pool": "lockscontinue:ancient",
+  "weight": 2,
+  "min_rank": 3,
+  "max_rank": 5,
+  "lock_types": ["lockscontinue:rotary"],
+  "multiply": {
+    "rotary.feedback_falloff": 1.3,
+    "rotary.stress_multiplier": 1.3
+  }
+}

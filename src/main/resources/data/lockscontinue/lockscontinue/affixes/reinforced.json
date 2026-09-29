@@ -1,0 +1,11 @@
+{
+  "pool": "lockscontinue:ancient",
+  "weight": 1,
+  "min_rank": 4,
+  "max_rank": 5,
+  "add": {
+    "failure.mistakes": -1,
+    "memory.mistakes": -1,
+    "memory.mismatch_limit": -1
+  }
+}

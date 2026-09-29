@@ -1,0 +1,7 @@
+{
+  "pool": "lockscontinue:common",
+  "weight": 3,
+  "min_rank": 1,
+  "max_rank": 5,
+  "add": { "failure.durability_cost": 1 }
+}

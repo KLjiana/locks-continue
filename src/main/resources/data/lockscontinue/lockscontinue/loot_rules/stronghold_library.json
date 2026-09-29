@@ -1,0 +1,17 @@
+{
+  "priority": 36,
+  "match": { "loot_tables": ["minecraft:chests/stronghold_library"] },
+  "lock_chance": 0.85,
+  "lock_types": {
+    "lockscontinue:memory": 2,
+    "lockscontinue:pipe": 1,
+    "lockscontinue:rotary": 1
+  },
+  "difficulties": {
+    "lockscontinue:normal": 2,
+    "lockscontinue:hard": 2
+  },
+  "affix_count": { "min": 0, "max": 1 },
+  "affix_chance": 0.35,
+  "affix_pool": "lockscontinue:common"
+}

@@ -1,0 +1,18 @@
+{
+  "priority": 40,
+  "match": { "loot_tables": ["minecraft:chests/pillager_outpost"] },
+  "lock_chance": 0.7,
+  "lock_types": {
+    "lockscontinue:pin": 3,
+    "lockscontinue:pipe": 1,
+    "lockscontinue:rotary": 1
+  },
+  "difficulties": {
+    "lockscontinue:simple": 1,
+    "lockscontinue:normal": 3,
+    "lockscontinue:hard": 1
+  },
+  "affix_count": { "min": 0, "max": 1 },
+  "affix_chance": 0.3,
+  "affix_pool": "lockscontinue:common"
+}

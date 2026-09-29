@@ -1,0 +1,6 @@
+{
+  "priority": 1000,
+  "match": { "loot_tables": ["minecraft:chests/spawn_bonus_chest"] },
+  "lock_chance": 0.0,
+  "affix_count": { "min": 0, "max": 0 }
+}

@@ -1,0 +1,8 @@
+{
+  "pool": "lockscontinue:common",
+  "weight": 2,
+  "min_rank": 2,
+  "max_rank": 5,
+  "lock_types": ["lockscontinue:pin"],
+  "add": { "pin.set_tolerance_ticks": -1 }
+}
