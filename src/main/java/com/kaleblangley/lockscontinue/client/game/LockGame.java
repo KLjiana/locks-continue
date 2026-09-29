@@ -21,6 +21,10 @@ public interface LockGame {
         return false;
     }
 
+    default boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        return false;
+    }
+
     float progress();
 
     Component status();
@@ -43,7 +47,20 @@ public interface LockGame {
     default void onServerFailure() {
     }
 
+    /** A legal puzzle mistake that consumed one configured attempt. */
+    default void onServerMistake() {
+        onServerFailure();
+    }
+
     /** Confirms a non-final puzzle step accepted by the authoritative server. */
     default void onServerProgress() {
+    }
+
+    /** Confirms a legal action that changed server state without a stage update. */
+    default void onServerUpdated() {
+    }
+
+    /** Reconciles an invalid or stale action without consuming durability. */
+    default void onServerRejected() {
     }
 }

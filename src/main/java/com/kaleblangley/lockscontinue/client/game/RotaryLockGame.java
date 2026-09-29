@@ -3,6 +3,7 @@ package com.kaleblangley.lockscontinue.client.game;
 import com.mojang.math.Axis;
 import com.kaleblangley.lockscontinue.client.LockScreen;
 import com.kaleblangley.lockscontinue.item.ModItems;
+import com.kaleblangley.lockscontinue.lock.definition.LockChallengeSnapshot;
 import com.kaleblangley.lockscontinue.lock.puzzle.LockAction;
 import com.kaleblangley.lockscontinue.lock.puzzle.RotaryPuzzle;
 import net.minecraft.client.Minecraft;
@@ -39,6 +40,8 @@ public final class RotaryLockGame implements LockGame {
     private final ItemStack lockPickModel;
     private final ItemStack screwdriverModel;
     private final LockActionSender sender;
+    private final float coreTurnStep;
+    private final float springBackFactor;
     private float pickAngle = 270.0F;
     private float coreAngle;
     private int bounceTicks;
@@ -46,17 +49,25 @@ public final class RotaryLockGame implements LockGame {
     private boolean awaitingResult;
 
     public RotaryLockGame(long seed, ItemStack tool, LockActionSender sender) {
-        this.puzzle = new RotaryPuzzle(seed);
+        this(seed, tool, null, sender);
+    }
+
+    public RotaryLockGame(long seed, ItemStack tool,
+                          LockChallengeSnapshot challenge, LockActionSender sender) {
+        this.puzzle = new RotaryPuzzle(seed, challenge);
         this.lockPickModel = tool.copy();
         // This is a render-only stack. The real tool remains in LockScreen's status bar.
         this.screwdriverModel = new ItemStack(ModItems.SCREWDRIVER_RENDER.get());
         this.sender = sender;
+        int speed = challenge == null ? 0 : challenge.toolStats().speed();
+        this.coreTurnStep = Math.min(5.0F, 1.5F + speed * 0.35F);
+        this.springBackFactor = Math.max(0.55F, 0.84F - speed * 0.03F);
     }
 
     @Override
     public void tick() {
         if (!dragging) {
-            coreAngle *= 0.84F;
+            coreAngle *= springBackFactor;
         }
         if (bounceTicks > 0) {
             bounceTicks--;
@@ -81,7 +92,7 @@ public final class RotaryLockGame implements LockGame {
         }
         float allowance = puzzle.rotationAllowance(pickAngle);
         if (dragging) {
-            coreAngle = Math.min(allowance, coreAngle + 1.5F);
+            coreAngle = Math.min(allowance, coreAngle + coreTurnStep);
         }
 
         graphics.pose().pushPose();
@@ -109,6 +120,7 @@ public final class RotaryLockGame implements LockGame {
                 coreAngle, SCREWDRIVER_ORBIT_X, SCREWDRIVER_ORBIT_Y,
                 SCREWDRIVER_OFFSET_X, SCREWDRIVER_OFFSET_Y, SCREWDRIVER_OFFSET_Z,
                 SCREWDRIVER_ROTATION_X, SCREWDRIVER_ROTATION_Y, SCREWDRIVER_ROTATION_Z);
+
     }
 
     private static void renderItemModel(GuiGraphics graphics, ItemStack stack,
@@ -212,6 +224,13 @@ public final class RotaryLockGame implements LockGame {
         awaitingResult = false;
         dragging = false;
         bounceTicks = 10;
+        coreAngle = 0.0F;
+    }
+
+    @Override
+    public void onServerRejected() {
+        awaitingResult = false;
+        dragging = false;
         coreAngle = 0.0F;
     }
 }

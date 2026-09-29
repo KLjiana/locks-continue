@@ -14,6 +14,7 @@ public final class ModSounds {
 
     public static final RegistryObject<SoundEvent> PIN_FAIL = register("pin_fail");
     public static final RegistryObject<SoundEvent> PIN_FINISH = register("pin_finish");
+    public static final RegistryObject<SoundEvent> ROTARY_FAIL = register("lock_cut");
     public static final RegistryObject<SoundEvent> LOCK_RATTLE = register("lock_rattle");
     public static final RegistryObject<SoundEvent> LOCK_OPEN = register("lock_open");
     public static final RegistryObject<SoundEvent> CARD_FAIL = register("card_fail");

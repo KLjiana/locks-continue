@@ -5,6 +5,9 @@
   "pin_finish": {
     "sounds": ["lockscontinue:pin_finish"]
   },
+  "lock_cut": {
+    "sounds": ["lockscontinue:lock_cut"]
+  },
   "lock_rattle": {
     "sounds": ["lockscontinue:lock_rattle"]
   },
