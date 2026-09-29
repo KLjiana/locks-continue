@@ -1,8 +1,9 @@
 package com.kaleblangley.lockscontinue.network;
 
 public enum LockResultType {
-    SUCCESS,
+    UPDATED,
     PROGRESS,
-    FAILURE,
-    EXPIRED
+    MISTAKE,
+    SOLVED,
+    REJECTED
 }

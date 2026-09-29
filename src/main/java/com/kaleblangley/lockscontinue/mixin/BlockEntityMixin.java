@@ -21,6 +21,11 @@ public abstract class BlockEntityMixin {
     @Inject(method = "load(Lnet/minecraft/nbt/CompoundTag;)V", at = @At("TAIL"))
     private void lockscontinue$markLootChestFromLoadedTag(CompoundTag tag, CallbackInfo ci) {
         BlockEntity blockEntity = (BlockEntity) (Object) this;
+        // Migrate old worlds before any lock lookup or client sync observes
+        // the legacy variant-only representation.
+        if (blockEntity.getLevel() != null && !blockEntity.getLevel().isClientSide()) {
+            LockData.migrateLegacy(blockEntity);
+        }
         if (!(blockEntity instanceof RandomizableContainerBlockEntity container)
                 || (!tag.contains("LootTable", Tag.TAG_STRING)
                 && !tag.contains("specialLootChest_table", Tag.TAG_STRING))) {

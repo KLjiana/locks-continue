@@ -1,8 +1,9 @@
 package com.kaleblangley.lockscontinue.world;
 
 import com.kaleblangley.lockscontinue.LocksContinue;
-import com.kaleblangley.lockscontinue.config.LocksContinueConfig;
 import com.kaleblangley.lockscontinue.lock.LockData;
+import com.kaleblangley.lockscontinue.lock.LockInstance;
+import com.kaleblangley.lockscontinue.lock.definition.LockDefinitionManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -82,9 +83,11 @@ public final class LootChestLockGenerator {
         boolean changed = false;
         for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
             if (blockEntity instanceof RandomizableContainerBlockEntity container
-                    && LockData.isLockableContainer(container)
-                    && container.getPersistentData().getBoolean(LockData.LOCK_PENDING_TAG)) {
-                changed |= tryGenerateLock(level, level.getRandom(), container);
+                    && LockData.isLockableContainer(container)) {
+                changed |= LockData.migrateLegacy(container);
+                if (container.getPersistentData().getBoolean(LockData.LOCK_PENDING_TAG)) {
+                    changed |= tryGenerateLock(level, level.getRandom(), container);
+                }
             }
         }
 
@@ -103,38 +106,36 @@ public final class LootChestLockGenerator {
                 getAvailableContainers(level, container);
         boolean allChecked = true;
         boolean anyChecked = false;
-        int existingVariant = -1;
+        LockInstance existingInstance = null;
         for (RandomizableContainerBlockEntity connectedContainer : containers) {
             CompoundTag persistentData = connectedContainer.getPersistentData();
             boolean checked = persistentData.getBoolean(LockData.LOCK_CHECKED_TAG);
             allChecked &= checked;
             anyChecked |= checked;
-            if (existingVariant < 0 && LockData.hasLockData(connectedContainer)) {
-                existingVariant = LockData.getVariant(connectedContainer);
+            if (existingInstance == null) {
+                existingInstance = LockData.getLockInstance(connectedContainer);
             }
         }
 
         if (allChecked) {
-            return synchronizeVariant(containers, existingVariant);
+            return synchronizeInstance(containers, existingInstance);
         }
 
-        int variant;
-        if (existingVariant >= 0) {
+        LockInstance instance;
+        if (existingInstance != null) {
             // Complete a partially processed double chest with its existing
             // decision instead of rolling a second independent result.
-            variant = existingVariant;
+            instance = existingInstance;
         } else if (anyChecked) {
-            // A checked half without a variant already decided that this
+            // A checked half without an instance already decided that this
             // chest should remain unlocked.
-            variant = -1;
+            instance = null;
         } else {
-            BlockState state = container.getBlockState();
-            if (LockData.getContainerFacing(state) == null
-                    || random.nextDouble() >= LocksContinueConfig.LOOT_CHEST_LOCK_CHANCE.get()) {
-                variant = -1;
-            } else {
-                variant = random.nextInt(4);
-            }
+            instance = LockDefinitionManager.INSTANCE.createLootLock(
+                    level,
+                    random,
+                    container,
+                    LockData.getSourceLootTable(container));
         }
 
         boolean changed = false;
@@ -148,32 +149,34 @@ public final class LootChestLockGenerator {
                 changed = true;
                 persistentData.remove(LockData.LOCK_PENDING_TAG);
             }
-            if (variant >= 0) {
-                if (persistentData.getInt(LockData.LOCK_VARIANT_TAG) != variant
-                        || !LockData.hasLockData(connectedContainer)) {
+            if (instance != null) {
+                if (!instance.equals(LockData.getLockInstance(connectedContainer))
+                        || !persistentData.contains(LockData.LOCK_INSTANCE_TAG, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
                     changed = true;
-                    persistentData.putInt(LockData.LOCK_VARIANT_TAG, variant);
+                    LockData.applyLock(connectedContainer, instance);
                 }
-            } else if (LockData.hasLockData(connectedContainer)) {
+            } else if (persistentData.contains(LockData.LOCK_INSTANCE_TAG, net.minecraft.nbt.Tag.TAG_COMPOUND)
+                    || persistentData.contains(LockData.LOCK_VARIANT_TAG, net.minecraft.nbt.Tag.TAG_INT)) {
                 changed = true;
+                persistentData.remove(LockData.LOCK_INSTANCE_TAG);
                 persistentData.remove(LockData.LOCK_VARIANT_TAG);
             }
         }
         return changed;
     }
 
-    private static boolean synchronizeVariant(
-            List<RandomizableContainerBlockEntity> containers, int variant) {
-        if (variant < 0) {
+    private static boolean synchronizeInstance(
+            List<RandomizableContainerBlockEntity> containers, LockInstance instance) {
+        if (instance == null) {
             return false;
         }
 
         boolean changed = false;
         for (RandomizableContainerBlockEntity container : containers) {
             CompoundTag persistentData = container.getPersistentData();
-            if (persistentData.getInt(LockData.LOCK_VARIANT_TAG) != variant
-                    || !LockData.hasLockData(container)) {
-                persistentData.putInt(LockData.LOCK_VARIANT_TAG, variant);
+            if (!instance.equals(LockData.getLockInstance(container))
+                    || !persistentData.contains(LockData.LOCK_INSTANCE_TAG, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                LockData.applyLock(container, instance);
                 changed = true;
             }
         }
