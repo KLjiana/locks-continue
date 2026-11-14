@@ -335,8 +335,8 @@ public final class LockScreen extends Screen {
         }
 
         if (packet.result() == LockResultType.SOLVED) {
-            if (type == LockType.PIN_LOCK) {
-                LockSoundHelper.playUi(com.kaleblangley.lockscontinue.sound.ModSounds.PIN_FINISH.get(), 0.8F, 1.0F);
+            if (type == LockType.PIN_LOCK && game != null) {
+                game.onServerProgress();
             }
             closing = true;
             Minecraft.getInstance().setScreen(null);
@@ -371,6 +371,9 @@ public final class LockScreen extends Screen {
         }
         if (packet.result() == LockResultType.MISTAKE
                 && (attemptsLeft <= 0 || mistakesLeft <= 0)) {
+            if (type == LockType.PIN_LOCK && game != null) {
+                game.onServerMistake();
+            }
             closing = true;
             Minecraft.getInstance().setScreen(null);
             return;

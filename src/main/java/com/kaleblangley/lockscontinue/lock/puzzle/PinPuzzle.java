@@ -14,6 +14,8 @@ public final class PinPuzzle implements LockPuzzle {
     public static final int PIN_COUNT = 5;
     public static final int MIN_PIN_COUNT = 3;
     public static final int MAX_PIN_COUNT = 10;
+    /** Shared by server timing and client motion so the lift stays in sync. */
+    public static final float ANIMATION_SPEED = 1.5F;
     private static final int SET_TOLERANCE_TICKS = 2;
 
     private final long seed;
@@ -82,12 +84,12 @@ public final class PinPuzzle implements LockPuzzle {
         return activePin;
     }
 
-    public int activeRiseTicks() {
-        return activeProfile == null ? 0 : activeProfile.riseTicks();
+    public double activeRiseTicks() {
+        return activeProfile == null ? 0.0D : activeProfile.riseTicks() / (double) ANIMATION_SPEED;
     }
 
-    public int activeHoldTicks() {
-        return activeProfile == null ? 0 : activeProfile.holdTicks();
+    public double activeHoldTicks() {
+        return activeProfile == null ? 0.0D : activeProfile.holdTicks() / (double) ANIMATION_SPEED;
     }
 
     /** Starts the pin's fixed cycle, or a fresh cycle when variable speed is enabled. */
@@ -137,7 +139,7 @@ public final class PinPuzzle implements LockPuzzle {
             return 0.0F;
         }
 
-        double elapsed = Math.max(0.0D, gameTime - activeStartTick);
+        double elapsed = elapsedAnimationTicks(gameTime);
         if (elapsed < activeProfile.riseTicks()) {
             double t = elapsed / activeProfile.riseTicks();
             return (float) (1.0D - (1.0D - t) * (1.0D - t));
@@ -156,7 +158,7 @@ public final class PinPuzzle implements LockPuzzle {
 
     public boolean isLiftActive(long gameTime) {
         return activePin >= 0 && activeProfile != null
-                && gameTime - activeStartTick < activeProfile.totalTicks();
+                && elapsedAnimationTicks(gameTime) < activeProfile.totalTicks();
     }
 
     public void finishExpiredLift(long gameTime) {
@@ -212,9 +214,10 @@ public final class PinPuzzle implements LockPuzzle {
         }
 
         long elapsed = gameTime - activeStartTick;
-        long windowStart = activeProfile.riseTicks() - setToleranceTicks;
-        long windowEnd = activeProfile.riseTicks()
-                + activeProfile.holdTicks() + setToleranceTicks;
+        // Move the judgement window with the faster lift, keeping the
+        // configured tolerance measured in actual server ticks.
+        double windowStart = activeRiseTicks() - setToleranceTicks;
+        double windowEnd = activeRiseTicks() + activeHoldTicks() + setToleranceTicks;
         if (elapsed < windowStart || elapsed > windowEnd) {
             resetAfterFailure();
             return PuzzleActionResult.MISTAKE;
@@ -228,6 +231,10 @@ public final class PinPuzzle implements LockPuzzle {
     @Override
     public boolean isComplete() {
         return isSolved();
+    }
+
+    private double elapsedAnimationTicks(double gameTime) {
+        return Math.max(0.0D, gameTime - activeStartTick) * ANIMATION_SPEED;
     }
 
     private void clearLift() {

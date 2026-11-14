@@ -10,7 +10,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-/** Five-tumbler timing game modelled after Oblivion's manual lockpicking. */
+import java.util.Locale;
+
+/** Tumbler timing game modelled after Oblivion's manual lockpicking. */
 public final class PinLockGame implements LockGame {
     private static final int LOGICAL_HEIGHT = 50;
     private static final int BODY_X = 8;
@@ -24,12 +26,12 @@ public final class PinLockGame implements LockGame {
     private static final int FIRST_SLOT_X = 17;
     private static final int PICK_WIDTH = 70;
     private static final int PICK_CONTACT_OFFSET_X = 69;
-    private static final float PICK_STEP_X = 1.25F;
+    private static final float PICK_STEP_X = 1.25F * PinPuzzle.ANIMATION_SPEED;
     private static final float PICK_LIFT_PIXELS = 2.0F;
     private static final float PICK_HORIZONTAL_RESPONSE = 0.78F;
     private static final float PICK_INPUT_NUDGE = 0.35F;
-    private static final float PICK_HOLD_STEP_X = 1.125F;
-    private static final float PICK_BOUNCE_DURATION_TICKS = 4.0F;
+    private static final float PICK_HOLD_STEP_X = 1.125F * PinPuzzle.ANIMATION_SPEED;
+    private static final float PICK_BOUNCE_DURATION_TICKS = 4.0F / PinPuzzle.ANIMATION_SPEED;
     private static final float PIN_RANGE_HALF_WIDTH = 3.0F;
     private final PinPuzzle puzzle;
     private final LockActionSender sender;
@@ -60,8 +62,9 @@ public final class PinLockGame implements LockGame {
         this.puzzle = new PinPuzzle(seed, challenge);
         this.sender = sender;
         int speed = challenge == null ? 0 : challenge.toolStats().speed();
-        this.horizontalResponse = Math.min(0.96F, PICK_HORIZONTAL_RESPONSE + speed * 0.04F);
-        this.inputNudge = Math.min(1.0F, PICK_INPUT_NUDGE + speed * 0.1F);
+        this.horizontalResponse = animationResponse(
+                Math.min(0.96F, PICK_HORIZONTAL_RESPONSE + speed * 0.04F));
+        this.inputNudge = animationResponse(Math.min(1.0F, PICK_INPUT_NUDGE + speed * 0.1F));
         this.soundVolumeMultiplier = challenge != null && challenge.hasFlag("sound_reduced")
                 ? 0.35F : 1.0F;
         this.insight = challenge == null ? 0 : challenge.toolStats().insight();
@@ -235,7 +238,8 @@ public final class PinLockGame implements LockGame {
                 ? Component.translatable("lock.lockscontinue.waiting")
                 : speedHintShown && puzzle.isLiftActive(clientTick)
                 ? Component.translatable("lock.lockscontinue.pin_speed_hint",
-                puzzle.activeRiseTicks(), puzzle.activeHoldTicks())
+                String.format(Locale.ROOT, "%.1f", puzzle.activeRiseTicks()),
+                String.format(Locale.ROOT, "%.1f", puzzle.activeHoldTicks()))
                 : puzzle.isLiftActive(clientTick)
                 ? Component.translatable("lock.lockscontinue.pin_timing")
                 : puzzle.lockedCount() == 0
@@ -249,7 +253,7 @@ public final class PinLockGame implements LockGame {
         if (pendingPin >= 0) {
             puzzle.confirmSet(pendingPin);
             LockSoundHelper.playUi(com.kaleblangley.lockscontinue.sound.ModSounds.PIN_FINISH.get(),
-                    0.8F * soundVolumeMultiplier, 1.0F);
+                    soundVolumeMultiplier, 1.0F);
         }
         pickBounceTicks = PICK_BOUNCE_DURATION_TICKS;
         pendingPin = -1;
@@ -263,7 +267,7 @@ public final class PinLockGame implements LockGame {
         pickBounceTicks = PICK_BOUNCE_DURATION_TICKS;
         puzzle.resetAfterFailure();
         LockSoundHelper.playUi(com.kaleblangley.lockscontinue.sound.ModSounds.PIN_FAIL.get(),
-                0.7F * soundVolumeMultiplier, 1.0F);
+                soundVolumeMultiplier, 1.0F);
     }
 
     @Override
@@ -300,7 +304,7 @@ public final class PinLockGame implements LockGame {
                 speedHintShown = true;
             }
             LockSoundHelper.playUi(com.kaleblangley.lockscontinue.sound.ModSounds.PIN_FAIL.get(),
-                    0.7F * soundVolumeMultiplier, 1.0F);
+                    soundVolumeMultiplier, 1.0F);
             sender.send(LockAction.pinLift(pin));
         }
     }
@@ -320,6 +324,11 @@ public final class PinLockGame implements LockGame {
     private void movePickX(float delta) {
         pickTargetX = clampPickX(pickTargetX + delta);
         pickX += (pickTargetX - pickX) * inputNudge;
+    }
+
+    /** Converts a per-tick easing response to the faster animation clock. */
+    private static float animationResponse(float response) {
+        return 1.0F - (float) Math.pow(1.0F - response, PinPuzzle.ANIMATION_SPEED);
     }
 
     private int pinUnderPick() {

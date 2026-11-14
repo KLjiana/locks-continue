@@ -25,7 +25,8 @@ import java.util.function.Supplier;
 
 /** Network boundary between the client puzzle UI and the server lock session. */
 public final class LockNetwork {
-    private static final String PROTOCOL_VERSION = "11";
+    // Pin lift timing changed: client and server must use the same animation clock.
+    private static final String PROTOCOL_VERSION = "12";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(LocksContinue.MODID, "main"),
             () -> PROTOCOL_VERSION,
