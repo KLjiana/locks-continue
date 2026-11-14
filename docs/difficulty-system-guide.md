@@ -232,9 +232,14 @@ END_CAP
   "minimum_dead_ends": 0,
   "require_all_connected": false,
   "forbid_leaks": false,
-  "hint_count": 1
+  "hint_count": 1,
+  "time_limit_ticks": 1200
 }
 ```
+
+`time_limit_ticks` 是管道锁的独立游戏限时，默认 `1200` tick（60 秒），允许 `20～7200`，`-1` 表示关闭难度限时。第一次合法旋转后开始计时，关闭界面或断线不会重置开始时间。服务端逐 tick 检查，达到上限即失败并只扣一次配置的失败耐久。
+
+如果奖励规则使用 `time_ticks` 且 `failure_at` 为正数，则取该值与难度限时中较短的有效值。奖励规则的 `failure_at: -1` 只关闭奖励规则自身的时间限制；难度限时仍然生效。两处都设为 `-1` 才是不限时。界面倒计时使用服务端发来的实际剩余时间，与奖励评价指标分开同步。
 
 复杂度主要由以下内容决定：
 

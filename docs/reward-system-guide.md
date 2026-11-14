@@ -35,10 +35,11 @@
 | `reward_profile` | 数据包中的一套奖励规则资源 ID |
 | `metric` | 评价方式，首期为 `mistakes_used` 或 `time_ticks` |
 | `metric_value` | 当前有效尝试已经使用的失误数或时间 |
-| `failure_at` | 达到该值时本次游戏失败；`-1` 表示无限 |
+| `failure_at` | 达到该值时本次游戏失败；`-1` 关闭该奖励规则自身的失败阈值 |
 | `tier` | 一个奖励档位 |
 | `max` | 该奖励档位允许的最大指标值，包含边界值 |
 | `source_rolls` | 原来源战利品表总共生成的完整轮数 |
+| `source_luck_bonus` | 只加到额外来源表轮次上的 Minecraft 幸运值 |
 | `bonus_loot_table` | 可选的额外奖励战利品表 |
 | `bonus_rolls` | 额外奖励战利品表生成的轮数 |
 | `reward_claimed` | 成功奖励是否已经结算，用于幂等保护 |
@@ -52,6 +53,8 @@ source_rolls = 1  原表正常生成一轮
 source_rolls = 2  原表正常生成一轮，再额外生成一轮
 source_rolls = 3  原表总共生成三轮
 ```
+
+额外来源表轮次使用 `source_luck_bonus` 把额外幸运值传入战利品表。它不修改已经生成的原始战利品；带正 `quality` 的战利品项会得到更高权重，显式使用固定随机条件（例如 `random_chance`）的概率保持不变。默认值在 `source_rolls > 1` 时为 `2.0`，否则为 `0`；显式设为 `0` 可以关闭加成，合法范围为 `0～20`。原有已保存档位若缺少该字段，也会按此默认规则补齐。
 
 ## 4. 四种小游戏的评价方式
 
@@ -111,7 +114,9 @@ started_at = serverLevel.getGameTime()
 elapsed_ticks = serverLevel.getGameTime() - started_at
 ```
 
-如果 `failure_at >= 0` 且 `elapsed_ticks >= failure_at`，管道游戏失败。时间失败只应用一次失败耐久损耗，不能在后续服务器 tick 中重复扣除。
+管道锁同时受难度中的 `pipe.time_limit_ticks` 和时间型奖励规则中的 `failure_at` 约束，取两者中较短的有效值作为实际时间上限。难度限时默认 `1200` tick（60 秒），允许 `20～7200`；两项各自可用 `-1` 关闭，只有两项都关闭才不限时。若奖励指标为 `mistakes_used`，其 `failure_at` 仍表示失误数，难度的管道限时独立生效。
+
+当 `elapsed_ticks >= 实际时间上限` 时，管道游戏失败。时间失败只应用一次失败耐久损耗，不能在后续服务器 tick 中重复扣除。
 
 活动会话必须由服务端 tick 检查时间阈值，不能只在下一次玩家点击时检查，否则玩家停止操作后计时器永远不会失败。
 
@@ -125,7 +130,7 @@ elapsed_ticks = serverLevel.getGameTime() - started_at
 
 表示：
 
-- 失误次数可以无限增加，或管道时间可以无限延长。
+- 该奖励规则不再因自己的评价指标导致失败。对于管道锁，难度中的 `pipe.time_limit_ticks` 仍会独立限制时间；若要无限延长，难度限时也必须设为 `-1`。
 - 奖励档位仍然根据最终指标值选择。
 - 工具仍然可以因为每次有效失误的耐久损耗而损坏。
 - 无效会话仍然会被服务端拒绝。
@@ -222,12 +227,14 @@ lockscontinue:standard
         {
           "max": 0,
           "source_rolls": 3,
+          "source_luck_bonus": 2.0,
           "bonus_loot_table": "lockscontinue:bonus/perfect",
           "bonus_rolls": 2
         },
         {
           "max": 1,
           "source_rolls": 2,
+          "source_luck_bonus": 2.0,
           "bonus_loot_table": "lockscontinue:bonus/good",
           "bonus_rolls": 1
         },
@@ -320,7 +327,7 @@ time_ticks
 
 ### 8.3 `failure_at`
 
-- `-1`：无限。
+- `-1`：关闭该奖励规则自身的失败阈值；不关闭难度中的管道限时。
 - 失误型规则：允许 `1～100000`。
 - 时间型规则：允许 `1～72000`，即最多 1 小时游戏 tick。
 - `0` 无意义，应视为配置错误。
@@ -332,14 +339,21 @@ time_ticks
 - 表示原来源战利品表的总生成轮数，不是额外轮数。
 - 容器没有 `source_loot_table` 时，该字段退化为 `1`，不能复制容器中已经存在的物品。
 
-### 8.5 `bonus_loot_table`
+### 8.5 `source_luck_bonus`
+
+- 默认值：当 `source_rolls > 1` 时为 `2.0`，否则为 `0`。
+- 合法范围为 `0～20`；显式 `0` 可关闭额外轮次的幸运加成。
+- 只用于 `source_rolls - 1` 轮额外来源表生成，不影响容器原本的首轮战利品或单独的 `bonus_loot_table`。
+- 该值通过 Minecraft 的 Luck 参数提高带正 `quality` 战利品项的权重；直接使用固定随机概率条件的条目不受影响。
+
+### 8.6 `bonus_loot_table`
 
 - 可选资源 ID。
 - 仅当 `bonus_rolls > 0` 时需要。
 - 找不到该战利品表时跳过额外奖励并记录包含资源路径的错误日志。
 - 缺失奖励表不得阻止原容器解锁。
 
-### 8.6 `bonus_rolls`
+### 8.7 `bonus_rolls`
 
 - 默认值为 `0`。
 - 建议允许范围为 `0～5`。
@@ -382,6 +396,8 @@ failure_at      沿用现有难度快照中的失败限制；管道为 -1
 source_rolls    1
 bonus_rolls     0
 ```
+
+安全默认奖励中的管道 `failure_at: -1` 不会关闭难度的 `pipe.time_limit_ticks`。
 
 ## 10. 持久化数据模型
 
@@ -471,7 +487,8 @@ record RewardTier(
     int max,
     int sourceRolls,
     ResourceLocation bonusLootTable,
-    int bonusRolls
+    int bonusRolls,
+    double sourceLuckBonus
 ) {}
 
 record RewardRule(
@@ -558,7 +575,7 @@ private boolean rewardClaimed;
    ↓
 验证会话与操作序号
    ↓
-时间型规则是否已经达到 failure_at？── 是 → TIME_LIMIT 失败
+管道游戏是否已经达到实际时间上限？── 是 → TIME_LIMIT 失败
    ↓ 否
 服务端谜题处理操作
    ├─ REJECTED → 不改变指标、不损耗工具
@@ -567,7 +584,7 @@ private boolean rewardClaimed;
    └─ SOLVED → 进入奖励结算
 ```
 
-管道锁第一次合法 `PIPE_ROTATE` 在应用操作前启动计时。达到时间边界时使用 `elapsed_ticks >= failure_at` 判定失败。
+管道锁第一次合法 `PIPE_ROTATE` 确认后，以该操作所在的服务端 tick 记录开始时间。达到时间边界时使用 `elapsed_ticks >= 实际时间上限` 判定失败；奖励时间指标和游戏倒计时共用这个持久化开始时间。
 
 ### 13.4 成功结算
 
@@ -701,7 +718,10 @@ rewardMetric
 metricValue
 failureAt
 metricStarted
+pipeTimeLeftTicks
 ```
+
+`OpenLockPacket` 与 `LockResultPacket` 都携带服务端计算的 `pipeTimeLeftTicks`：`-1` 表示不限时，`0` 表示时间耗尽，正数为实际剩余 tick。客户端使用该值显示倒计时，不能仅从奖励规则的 `failure_at` 推断管道限时。
 
 客户端只需要知道状态栏显示数据，不需要知道服务器将生成哪个战利品表。
 
@@ -743,7 +763,7 @@ metricStarted
 
 未提供 `reward_profile` 的旧 `loot_rules` 使用 `lockscontinue:default`。原本的锁生成概率、类型、难度和词条选择不得改变。
 
-旧难度中的 `failure.mistakes` 和 `memory.mismatch_limit` 作为没有奖励配置时的回退。奖励规则存在时，`failure_at` 成为该会话的权威游戏失败阈值，避免同一小游戏同时存在两个互相冲突的失误上限。
+旧难度中的 `failure.mistakes` 和 `memory.mismatch_limit` 作为没有奖励配置时的回退。奖励规则存在时，失误型游戏以奖励规则的 `failure_at` 为失败阈值。管道锁的 `pipe.time_limit_ticks` 则独立生效，与时间型奖励规则的正 `failure_at` 取较短值；旧数据包未提供难度限时的，使用默认 `1200` tick。
 
 ## 19. 安全与防刷要求
 
@@ -815,12 +835,17 @@ metricStarted
 - 起点到全部终点连通后成功。
 - 达到时间阈值时只失败一次。
 - 关闭并重开 GUI 后计时继续。
-- `failure_at = -1` 时不会因为时间失败。
+- 奖励 `failure_at = -1`、难度限时为正数时，难度限时仍会触发失败。
+- 奖励时间阈值与难度限时都为正数时，取较短值。
+- 奖励 `failure_at = -1` 且难度 `time_limit_ticks = -1` 时不会因为时间失败。
+- 奖励按失误数评价时，难度限时及客户端倒计时仍然生效。
 
 ### 21.5 战利品结算
 
 - `source_rolls = 1` 与原版行为一致。
 - `source_rolls = 3` 只额外生成两轮来源表。
+- `source_luck_bonus` 只影响额外来源表轮次，基础战利品保持原概率。
+- 没有 `quality` 权重的直接随机概率条目不因 `source_luck_bonus` 改变。
 - `bonus_rolls` 按次数生成额外表。
 - 不同轮次使用不同确定性种子。
 - 重复成功包只发一次奖励。
