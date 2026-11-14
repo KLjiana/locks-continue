@@ -40,6 +40,10 @@ public record RewardAttemptState(UUID playerId, boolean metricStarted, long star
                 mistakesUsed, failed);
     }
 
+    public long elapsedTicks(long gameTime) {
+        return metricStarted ? Math.max(0L, gameTime - startedAt) : 0L;
+    }
+
     public RewardAttemptState addMistake() {
         return new RewardAttemptState(playerId, metricStarted, startedAt,
                 mistakesUsed + 1, failed);

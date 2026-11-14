@@ -114,7 +114,8 @@ public final class LockDifficultyDefinition {
                         bool(pipe, "require_all_connected", false),
                         bool(pipe, "forbid_leaks", false),
                         integer(pipe, "hint_count", 0, 0, 100),
-                        integer(pipe, "time_limit_ticks", 1200, 20, 7200)),
+                        PipeTimeLimit.validate(integer(pipe, "time_limit_ticks",
+                                PipeTimeLimit.DEFAULT_TICKS, -1, PipeTimeLimit.MAX_TICKS))),
                 new Rotary(
                         decimal(rotary, "sweet_spot_degrees",
                                 decimal(rotary, "tolerance_degrees", 7.0D, 0.0D, 180.0D),

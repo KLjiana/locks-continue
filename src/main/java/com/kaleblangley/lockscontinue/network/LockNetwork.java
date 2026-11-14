@@ -4,6 +4,7 @@ import com.kaleblangley.lockscontinue.LocksContinue;
 import com.kaleblangley.lockscontinue.interaction.LockSessionManager;
 import com.kaleblangley.lockscontinue.lock.LockType;
 import com.kaleblangley.lockscontinue.lock.definition.LockChallengeSnapshot;
+import com.kaleblangley.lockscontinue.lock.definition.PipeTimeLimit;
 import com.kaleblangley.lockscontinue.lock.definition.RewardMetric;
 import com.kaleblangley.lockscontinue.lock.puzzle.LockAction;
 import com.kaleblangley.lockscontinue.lock.puzzle.LockActionType;
@@ -25,8 +26,8 @@ import java.util.function.Supplier;
 
 /** Network boundary between the client puzzle UI and the server lock session. */
 public final class LockNetwork {
-    // Pin lift timing changed: client and server must use the same animation clock.
-    private static final String PROTOCOL_VERSION = "12";
+    // OpenLockPacket now carries the server's remaining pipe-game time.
+    private static final String PROTOCOL_VERSION = "13";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(LocksContinue.MODID, "main"),
             () -> PROTOCOL_VERSION,
@@ -67,7 +68,18 @@ public final class LockNetwork {
     public record OpenLockPacket(long sessionId, BlockPos pos, LockType type, long puzzleSeed,
                                  int attemptsLeft, int mistakesLeft, ItemStack tool,
                                  LockChallengeSnapshot challenge,
-                                 RewardStatus rewardStatus) {
+                                 RewardStatus rewardStatus, int pipeTimeLeftTicks) {
+        public OpenLockPacket(long sessionId, BlockPos pos, LockType type, long puzzleSeed,
+                              int attemptsLeft, int mistakesLeft, ItemStack tool,
+                              LockChallengeSnapshot challenge, RewardStatus rewardStatus) {
+            this(sessionId, pos, type, puzzleSeed, attemptsLeft, mistakesLeft, tool,
+                    challenge, rewardStatus, type == LockType.PIPE_LOCK
+                            ? PipeTimeLimit.remainingTicks(PipeTimeLimit.resolve(challenge.pipeTimeLimitTicks(),
+                                    rewardStatus.metric(), rewardStatus.failureAt()),
+                                    rewardStatus.metric() == RewardMetric.TIME_TICKS ? rewardStatus.metricValue() : 0)
+                            : 0);
+        }
+
         public OpenLockPacket(long sessionId, BlockPos pos, LockType type, long puzzleSeed,
                               int attemptsLeft, int mistakesLeft, ItemStack tool,
                               LockChallengeSnapshot challenge) {
@@ -85,13 +97,14 @@ public final class LockNetwork {
             buffer.writeItem(packet.tool);
             packet.challenge.encode(buffer);
             packet.rewardStatus.encode(buffer);
+            buffer.writeInt(packet.pipeTimeLeftTicks);
         }
 
         public static OpenLockPacket decode(FriendlyByteBuf buffer) {
             return new OpenLockPacket(buffer.readLong(), buffer.readBlockPos(),
                     buffer.readEnum(LockType.class), buffer.readLong(), buffer.readVarInt(),
                     buffer.readVarInt(), buffer.readItem(), LockChallengeSnapshot.decode(buffer),
-                    RewardStatus.decode(buffer));
+                    RewardStatus.decode(buffer), buffer.readInt());
         }
 
         public static void handle(OpenLockPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {

@@ -83,7 +83,15 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    workingDir = layout.buildDirectory.dir('test-run').get().asFile
+    doFirst {
+        workingDir.mkdirs()
+    }
 }
+
+// Configuration and packet tests use the same Minecraft/Forge types as main code.
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 
 mixin {
     add sourceSets.main, "mixins.${mod_id}.refmap.json"

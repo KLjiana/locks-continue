@@ -7,6 +7,7 @@ import com.kaleblangley.lockscontinue.lock.LockInstance;
 import com.kaleblangley.lockscontinue.lock.LockType;
 import com.kaleblangley.lockscontinue.lock.definition.LockChallengeSnapshot;
 import com.kaleblangley.lockscontinue.lock.definition.LockDefinitionManager;
+import com.kaleblangley.lockscontinue.lock.definition.PipeTimeLimit;
 import com.kaleblangley.lockscontinue.lock.definition.ResolvedRewardSnapshot;
 import com.kaleblangley.lockscontinue.lock.definition.RewardAttemptState;
 import com.kaleblangley.lockscontinue.lock.definition.RewardMetric;
@@ -264,7 +265,7 @@ public final class LockSessionManager {
         LockNetwork.sendTo(player, new LockNetwork.OpenLockPacket(
                 sessionId, session.pos, actualType, puzzleSeed, attemptsLeft,
                 session.mistakesLeft, tool.copy(), challenge,
-                rewardStatus(player, session)));
+                rewardStatus(player, session), remainingPipeTime(player, session)));
     }
 
     public static void handleAction(ServerPlayer player, LockNetwork.LockActionPacket packet) {
@@ -297,7 +298,7 @@ public final class LockSessionManager {
                 packet.toAction(), now);
         if (result != PuzzleActionResult.REJECTED) {
             session.expiresAt = now + SESSION_IDLE_TIMEOUT_TICKS;
-            if (session.reward.metric() == RewardMetric.TIME_TICKS
+            if (session.type == LockType.PIPE_LOCK
                     && !session.rewardAttempt.metricStarted()
                     && packet.action() == LockActionType.PIPE_ROTATE) {
                 session.rewardAttempt = session.rewardAttempt.start(now);
@@ -339,7 +340,7 @@ public final class LockSessionManager {
             }
             Session session = entry.getValue();
             long now = player.serverLevel().getGameTime();
-            if (now >= session.expiresAt) {
+            if (!isSessionValid(player, session)) {
                 expire(player, session);
             } else if (timeLimitReached(session, now)) {
                 failForTime(player, session);
@@ -516,11 +517,8 @@ public final class LockSessionManager {
         if (session.type != LockType.PIPE_LOCK) {
             return 0;
         }
-        if (session.reward.failureAt() < 0 || !session.rewardAttempt.metricStarted()) {
-            return session.reward.failureAt() < 0 ? 0 : session.reward.failureAt();
-        }
-        long remaining = session.reward.failureAt() - metricValue(player, session);
-        return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, remaining));
+        return PipeTimeLimit.remainingTicks(session.pipeTimeLimitTicks,
+                session.rewardAttempt.elapsedTicks(player.serverLevel().getGameTime()));
     }
 
     private static int metricValue(ServerPlayer player, Session session) {
@@ -528,8 +526,7 @@ public final class LockSessionManager {
             if (!session.rewardAttempt.metricStarted()) {
                 return 0;
             }
-            long elapsed = Math.max(0L,
-                    player.serverLevel().getGameTime() - session.rewardAttempt.startedAt());
+            long elapsed = session.rewardAttempt.elapsedTicks(player.serverLevel().getGameTime());
             return (int) Math.min(Integer.MAX_VALUE, elapsed);
         }
         return Math.max(0, session.rewardAttempt.mistakesUsed());
@@ -549,12 +546,15 @@ public final class LockSessionManager {
     }
 
     private static boolean timeLimitReached(Session session, long now) {
+        if (session.type == LockType.PIPE_LOCK) {
+            return PipeTimeLimit.reached(session.pipeTimeLimitTicks, session.rewardAttempt, now);
+        }
         if (session.reward.metric() != RewardMetric.TIME_TICKS
                 || !session.rewardAttempt.metricStarted()
                 || session.reward.failureAt() < 0) {
             return false;
         }
-        return Math.max(0L, now - session.rewardAttempt.startedAt()) >= session.reward.failureAt();
+        return session.rewardAttempt.elapsedTicks(now) >= session.reward.failureAt();
     }
 
     private static void persistAttempt(ServerPlayer player, Session session) {
@@ -595,6 +595,7 @@ public final class LockSessionManager {
         private int mistakesLeft;
         private long lastActionSequence;
         private final LockChallengeSnapshot challenge;
+        private final int pipeTimeLimitTicks;
         private long durabilitySpent;
         private long expiresAt;
         private final ResolvedRewardSnapshot reward;
@@ -621,6 +622,9 @@ public final class LockSessionManager {
             this.mistakesLeft = mistakesLeft;
             this.challenge = challenge;
             this.reward = reward;
+            this.pipeTimeLimitTicks = type == LockType.PIPE_LOCK
+                    ? PipeTimeLimit.resolve(challenge.pipeTimeLimitTicks(), reward.metric(), reward.failureAt())
+                    : -1;
             this.rewardAttempt = rewardAttempt;
             this.puzzle = puzzle;
             this.expiresAt = expiresAt;

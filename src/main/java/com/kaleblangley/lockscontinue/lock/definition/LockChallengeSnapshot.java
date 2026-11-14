@@ -103,7 +103,7 @@ public record LockChallengeSnapshot(
                 booleanValue(context, "pipe.require_all_connected", false),
                 booleanValue(context, "pipe.forbid_leaks", false),
                 intValue(context, "pipe.hint_count", context.pipeHintCount(), 0, 100),
-                intValue(context, "pipe.time_limit_ticks", 1200, 20, 7200),
+                PipeTimeLimit.normalize(context.numeric("pipe.time_limit_ticks", PipeTimeLimit.DEFAULT_TICKS)),
                 (float) Math.max(0.0D, Math.min(180.0D,
                         context.numeric("rotary.sweet_spot_degrees", context.rotaryToleranceDegrees()))),
                 (float) Math.max(0.01D, Math.min(100.0D,

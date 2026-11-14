@@ -69,7 +69,7 @@ public final class LockScreen extends Screen {
         this.mistakesLeft = packet.mistakesLeft();
         this.rewardStatus = packet.rewardStatus();
         this.pipeTimeLeftTicks = packet.type() == LockType.PIPE_LOCK
-                ? initialPipeTime(packet.rewardStatus()) : 0;
+                ? Math.max(-1, packet.pipeTimeLeftTicks()) : 0;
         this.tool = packet.tool().copy();
         this.challenge = packet.challenge();
     }
@@ -107,7 +107,6 @@ public final class LockScreen extends Screen {
             game.tick();
         }
         if (type == LockType.PIPE_LOCK && rewardStatus != null
-                && rewardStatus.metric() == RewardMetric.TIME_TICKS
                 && rewardStatus.metricStarted() && pipeTimeLeftTicks > 0) {
             pipeTimeLeftTicks--;
         }
@@ -148,7 +147,7 @@ public final class LockScreen extends Screen {
                         Component.translatable("lock.lockscontinue.pipe_waiting"),
                         textX, statusTop + 26, challenge.displayColor());
             } else {
-                if (rewardStatus != null && rewardStatus.failureAt() < 0) {
+                if (pipeTimeLeftTicks < 0) {
                     graphics.drawString(this.font,
                             Component.translatable("lock.lockscontinue.pipe_infinite"),
                             textX, statusTop + 26, challenge.displayColor());
@@ -327,8 +326,7 @@ public final class LockScreen extends Screen {
         mistakesLeft = packet.mistakesLeft();
         rewardStatus = packet.rewardStatus();
         if (type == LockType.PIPE_LOCK) {
-            pipeTimeLeftTicks = rewardStatus != null
-                    ? initialPipeTime(rewardStatus) : Math.max(0, packet.pipeTimeLeftTicks());
+            pipeTimeLeftTicks = Math.max(-1, packet.pipeTimeLeftTicks());
         }
         if (tool.isDamageableItem()) {
             tool.setDamageValue(Math.max(0, tool.getMaxDamage() - attemptsLeft));
@@ -383,14 +381,6 @@ public final class LockScreen extends Screen {
         if (game != null) {
             game.onServerMistake();
         }
-    }
-
-    private static int initialPipeTime(LockNetwork.RewardStatus status) {
-        if (status == null || status.metric() != RewardMetric.TIME_TICKS
-                || status.failureAt() < 0) {
-            return 0;
-        }
-        return Math.max(0, status.failureAt() - status.metricValue());
     }
 
     @Override
