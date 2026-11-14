@@ -57,14 +57,14 @@ public final class LockRewardDistributor {
                 }
                 for (int roll = 1; roll < Math.max(1, tier.sourceRolls()); roll++) {
                     generateInto(level, player, targets, primary.getBlockPos(), instance.sourceLootTable(),
-                            instance, metricValue, roll, "source");
+                            instance, metricValue, roll, "source", tier.sourceLuckBonus());
                 }
             }
 
             if (tier.bonusLootTable() != null && tier.bonusRolls() > 0) {
                 for (int roll = 0; roll < tier.bonusRolls(); roll++) {
                     generateInto(level, player, targets, primary.getBlockPos(), tier.bonusLootTable(),
-                            instance, metricValue, roll, "bonus");
+                            instance, metricValue, roll, "bonus", 0.0D);
                 }
             }
         } catch (RuntimeException exception) {
@@ -79,7 +79,7 @@ public final class LockRewardDistributor {
                                      List<? extends Container> targets, BlockPos rewardPos,
                                      net.minecraft.resources.ResourceLocation lootTableId,
                                      LockInstance instance, int metricValue, int roll,
-                                     String category) {
+                                     String category, double luckBonus) {
         if (!level.getServer().getLootData().getKeys(LootDataType.TABLE).contains(lootTableId)) {
             LocksContinue.LOGGER.error("Missing reward loot table {} for {} reward at {}",
                     lootTableId, category, rewardPos);
@@ -91,7 +91,7 @@ public final class LockRewardDistributor {
                         Vec3.atCenterOf(rewardPos))
                 .withOptionalParameter(LootContextParams.THIS_ENTITY, player)
                 .withOptionalParameter(LootContextParams.TOOL, player.getMainHandItem())
-                .withLuck(player.getLuck())
+                .withLuck(player.getLuck() + (float) luckBonus)
                 .create(LootContextParamSets.CHEST);
         long seed = derivedSeed(instance.seed(), lootTableId, metricValue, roll, category);
         List<ItemStack> generated = lootTable.getRandomItems(params, seed);

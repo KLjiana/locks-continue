@@ -111,7 +111,7 @@ public final class LockDefinitionManager
         RewardMetric metric = type == LockType.PIPE_LOCK
                 ? RewardMetric.TIME_TICKS : RewardMetric.MISTAKES_USED;
         return new ResolvedRewardSnapshot(profileId, metric, failure,
-                List.of(new RewardTier(Integer.MAX_VALUE, 1, null, 0)));
+                List.of(new RewardTier(Integer.MAX_VALUE, 1, null, 0, 0.0D)));
     }
 
     public List<LockAffixDefinition> affixes(LockInstance instance) {

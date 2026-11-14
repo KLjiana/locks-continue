@@ -66,6 +66,12 @@ public record RewardProfileDefinition(ResourceLocation id, List<RewardRule> rule
                 if (sourceRolls < 1 || sourceRolls > 5) {
                     throw new IllegalArgumentException("source_rolls must be between 1 and 5");
                 }
+                double sourceLuckBonus = decimal(tier, "source_luck_bonus",
+                        RewardTier.defaultSourceLuckBonus(sourceRolls));
+                if (sourceLuckBonus < 0.0D
+                        || sourceLuckBonus > RewardTier.MAX_SOURCE_LUCK_BONUS) {
+                    throw new IllegalArgumentException("source_luck_bonus must be between 0 and 20");
+                }
                 int bonusRolls = integer(tier, "bonus_rolls", 0);
                 if (bonusRolls < 0 || bonusRolls > 5) {
                     throw new IllegalArgumentException("bonus_rolls must be between 0 and 5");
@@ -80,7 +86,8 @@ public record RewardProfileDefinition(ResourceLocation id, List<RewardRule> rule
                     throw new IllegalArgumentException(
                             "tier.max must be smaller than failure_at for finite failures");
                 }
-                tiers.add(new RewardTier(max, sourceRolls, bonusTable, bonusRolls));
+                tiers.add(new RewardTier(max, sourceRolls, bonusTable, bonusRolls,
+                        sourceLuckBonus));
                 previousMax = max;
             }
             rules.add(new RewardRule(types, difficulties, metric, failureAt, tiers));
@@ -89,7 +96,7 @@ public record RewardProfileDefinition(ResourceLocation id, List<RewardRule> rule
     }
 
     public static RewardProfileDefinition defaultProfile(ResourceLocation id) {
-        List<RewardTier> tiers = List.of(new RewardTier(0, 1, null, 0));
+        List<RewardTier> tiers = List.of(new RewardTier(0, 1, null, 0, 0.0D));
         List<RewardRule> rules = new ArrayList<>();
         rules.add(new RewardRule(Set.of(LockType.PIN_LOCK.resourceId(),
                 LockType.ROTARY_LOCK.resourceId(), LockType.MEMORY_LOCK.resourceId()),
@@ -141,5 +148,20 @@ public record RewardProfileDefinition(ResourceLocation id, List<RewardRule> rule
             throw new IllegalArgumentException(key + " must be an integer");
         }
         return value.getAsInt();
+    }
+
+    private static double decimal(JsonObject root, String key, double fallback) {
+        if (!root.has(key)) {
+            return fallback;
+        }
+        JsonElement element = root.get(key);
+        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
+            throw new IllegalArgumentException(key + " must be a number");
+        }
+        double value = element.getAsDouble();
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(key + " must be finite");
+        }
+        return value;
     }
 }
