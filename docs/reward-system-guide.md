@@ -1,5 +1,7 @@
 # Locks Continue 撬锁奖励机制程序指南
 
+简体中文 | [English](reward-system-guide.en.md) · [文档目录](README.md)
+
 ## 1. 文档目标
 
 本文定义 Locks Continue 的撬锁表现评价、失败阈值、奖励档位、战利品生成、数据包格式、服务端状态、兼容行为和验收标准。

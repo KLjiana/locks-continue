@@ -1,5 +1,7 @@
 # Locks Continue 难度与扩展系统设计指南
 
+简体中文 | [English](difficulty-system-guide.en.md) · [文档目录](README.md)
+
 ## 1. 文档目标
 
 本文定义 Locks Continue 的锁难度、四种开锁小游戏、撬锁工具属性、锁词条、战利品表映射和服务端验证要求。
