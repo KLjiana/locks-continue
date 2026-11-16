@@ -116,15 +116,17 @@ public final class LockScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float frameDeltaTicks) {
         this.renderBackground(graphics);
         renderGuiBackground(graphics);
         renderStatusBar(graphics, mouseX, mouseY);
         if (game != null) {
+            // Forge 1.20.1 supplies frame duration to Screen.render, not tick interpolation.
+            float partialTick = Minecraft.getInstance().getFrameTime();
             game.render(graphics, mouseX, mouseY, partialTick,
                     gameLeft, gameTop, gameWidth, gameHeight);
         }
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, frameDeltaTicks);
     }
 
     private void renderGuiBackground(GuiGraphics graphics) {

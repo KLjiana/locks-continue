@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 public interface LockGame {
     void tick();
 
+    /** partialTick is Minecraft.getFrameTime(), not the frame duration passed to Screen.render. */
     void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick,
                 int left, int top, int width, int height);
 

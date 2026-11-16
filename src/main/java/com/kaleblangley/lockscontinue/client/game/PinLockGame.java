@@ -32,23 +32,20 @@ public final class PinLockGame implements LockGame {
     private static final float PICK_INPUT_NUDGE = 0.35F;
     private static final float PICK_HOLD_STEP_X = 1.125F * PinPuzzle.ANIMATION_SPEED;
     private static final float PICK_BOUNCE_DURATION_TICKS = 4.0F / PinPuzzle.ANIMATION_SPEED;
+    private static final float PIN_TRANSITION_DURATION_TICKS = 2.0F / PinPuzzle.ANIMATION_SPEED;
     private static final float PIN_RANGE_HALF_WIDTH = 3.0F;
     private final PinPuzzle puzzle;
     private final LockActionSender sender;
-    private final float horizontalResponse;
-    private final float inputNudge;
+    private final PinLockAnimation animation;
     private final float soundVolumeMultiplier;
     private final int insight;
     private final int bodyWidth;
     private final int logicalWidth;
-    private float pickX;
-    private float previousPickX;
-    private float pickTargetX;
-    private float pickBounceTicks = PICK_BOUNCE_DURATION_TICKS;
+    private float pendingPinPosition;
     private int pendingPin = -1;
     private long clientTick;
     private boolean awaitingResult;
-    private boolean speedHintShown;
+    private Component speedHint;
     private boolean leftHeld;
     private boolean rightHeld;
     private boolean liftKeyHeld;
@@ -62,18 +59,18 @@ public final class PinLockGame implements LockGame {
         this.puzzle = new PinPuzzle(seed, challenge);
         this.sender = sender;
         int speed = challenge == null ? 0 : challenge.toolStats().speed();
-        this.horizontalResponse = animationResponse(
+        float horizontalResponse = animationResponse(
                 Math.min(0.96F, PICK_HORIZONTAL_RESPONSE + speed * 0.04F));
-        this.inputNudge = animationResponse(Math.min(1.0F, PICK_INPUT_NUDGE + speed * 0.1F));
+        float inputNudge = animationResponse(Math.min(1.0F, PICK_INPUT_NUDGE + speed * 0.1F));
         this.soundVolumeMultiplier = challenge != null && challenge.hasFlag("sound_reduced")
                 ? 0.35F : 1.0F;
         this.insight = challenge == null ? 0 : challenge.toolStats().insight();
         this.bodyWidth = BODY_LEFT_WIDTH
                 + middleSlotCount() * BODY_SLOT_WIDTH + rightSectionWidth();
         this.logicalWidth = BODY_X + bodyWidth + 8;
-        this.pickX = slotX(0);
-        this.previousPickX = pickX;
-        this.pickTargetX = pickX;
+        this.animation = new PinLockAnimation(puzzle.pinCount(), slotX(0),
+                horizontalResponse, inputNudge, PICK_BOUNCE_DURATION_TICKS,
+                PIN_TRANSITION_DURATION_TICKS);
     }
 
     @Override
@@ -85,16 +82,7 @@ public final class PinLockGame implements LockGame {
                 movePickX(direction * PICK_HOLD_STEP_X);
             }
         }
-        previousPickX = pickX;
-        float distance = pickTargetX - pickX;
-        if (Math.abs(distance) < 0.001F) {
-            pickX = pickTargetX;
-        } else {
-            pickX += distance * horizontalResponse;
-        }
-        if (pickBounceTicks < PICK_BOUNCE_DURATION_TICKS) {
-            pickBounceTicks = Math.min(PICK_BOUNCE_DURATION_TICKS, pickBounceTicks + 1.0F);
-        }
+        animation.tick();
         clientTick++;
         puzzle.finishExpiredLift(clientTick);
     }
@@ -112,12 +100,18 @@ public final class PinLockGame implements LockGame {
         renderLockBody(graphics);
 
         double renderTick = clientTick + partialTick;
+        animation.beginFrame(renderTick);
         for (int i = 0; i < puzzle.pinCount(); i++) {
             int x = slotX(i);
-            float currentY = pinY(puzzle.position(i, renderTick));
-            graphics.blit(LockScreen.LOCKS_TEXTURE, x - 3, 5, 6,
-                    Math.max(1, Math.round(currentY)),
+            float puzzlePosition = awaitingResult && i == pendingPin
+                    ? pendingPinPosition : puzzle.position(i, renderTick);
+            float currentY = pinY(animation.pinPosition(i, puzzlePosition));
+            graphics.pose().pushPose();
+            graphics.pose().translate(x - 3.0F, 5.0F, 0.0F);
+            graphics.pose().scale(1.0F, Math.max(1.0F, currentY) / 18.0F, 1.0F);
+            graphics.blit(LockScreen.LOCKS_TEXTURE, 0, 0, 6, 18,
                     55.0F, 0.0F, 6, 18, 70, 70);
+            graphics.pose().popPose();
             if (puzzle.isLocked(i)) {
                 graphics.setColor(0.55F, 0.55F, 0.55F, 1.0F);
             }
@@ -129,21 +123,14 @@ public final class PinLockGame implements LockGame {
             graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
 
-        float pickPosition = pickBouncePosition(pickBounceTicks + partialTick);
-        float renderPickX = pickX + (previousPickX - pickX) * (1.0F - partialTick);
+        float pickPosition = animation.bouncePosition();
+        float renderPickX = animation.pickPosition(partialTick);
         float pickY = pickY(pickPosition);
         graphics.pose().pushPose();
         graphics.pose().translate(renderPickX - PICK_CONTACT_OFFSET_X, pickY, 0.0F);
         graphics.blit(LockScreen.LOCKS_TEXTURE, 0, 0, PICK_WIDTH, 8,
                 0.0F, 35.0F, PICK_WIDTH, 8, 70, 70);
         graphics.pose().popPose();
-//        int pinUnderPick = pinUnderPick();
-//        int pickCenterX = Math.round(pickX);
-//        int selectionColor = pinUnderPick >= 0 && puzzle.isLocked(pinUnderPick)
-//                ? 0xAA6DE39A : puzzle.activePin() == pinUnderPick
-//                ? 0xAAE8C56A : 0xAA72D6FF;
-//        graphics.fill(pickCenterX - 4, pickY - 3, pickCenterX + 4, pickY - 2, selectionColor);
-//        graphics.fill(pickCenterX - 4, pickY + 8, pickCenterX + 4, pickY + 9, selectionColor);
         graphics.pose().popPose();
 
     }
@@ -236,10 +223,8 @@ public final class PinLockGame implements LockGame {
     public void renderStatus(GuiGraphics graphics, Font font, int centerX, int centerY) {
         Component message = awaitingResult
                 ? Component.translatable("lock.lockscontinue.waiting")
-                : speedHintShown && puzzle.isLiftActive(clientTick)
-                ? Component.translatable("lock.lockscontinue.pin_speed_hint",
-                String.format(Locale.ROOT, "%.1f", puzzle.activeRiseTicks()),
-                String.format(Locale.ROOT, "%.1f", puzzle.activeHoldTicks()))
+                : speedHint != null && puzzle.isLiftActive(clientTick)
+                ? speedHint
                 : puzzle.isLiftActive(clientTick)
                 ? Component.translatable("lock.lockscontinue.pin_timing")
                 : puzzle.lockedCount() == 0
@@ -251,20 +236,20 @@ public final class PinLockGame implements LockGame {
     @Override
     public void onServerProgress() {
         if (pendingPin >= 0) {
+            animation.transitionPins();
             puzzle.confirmSet(pendingPin);
             LockSoundHelper.playUi(com.kaleblangley.lockscontinue.sound.ModSounds.PIN_FINISH.get(),
                     soundVolumeMultiplier, 1.0F);
         }
-        pickBounceTicks = PICK_BOUNCE_DURATION_TICKS;
         pendingPin = -1;
         awaitingResult = false;
     }
 
     @Override
     public void onServerFailure() {
+        animation.transitionPins();
         awaitingResult = false;
         pendingPin = -1;
-        pickBounceTicks = PICK_BOUNCE_DURATION_TICKS;
         puzzle.resetAfterFailure();
         LockSoundHelper.playUi(com.kaleblangley.lockscontinue.sound.ModSounds.PIN_FAIL.get(),
                 soundVolumeMultiplier, 1.0F);
@@ -272,10 +257,10 @@ public final class PinLockGame implements LockGame {
 
     @Override
     public void onServerRejected() {
+        animation.transitionPins();
         awaitingResult = false;
         pendingPin = -1;
         puzzle.rejectLift();
-        pickBounceTicks = PICK_BOUNCE_DURATION_TICKS;
     }
 
     private static float scale(int width, int height, int logicalWidth) {
@@ -299,9 +284,15 @@ public final class PinLockGame implements LockGame {
         }
 
         if (puzzle.beginLift(pin, clientTick)) {
-            pickBounceTicks = 0.0F;
+            // Blend away any event-time jump, finishing by the unchanged apex.
+            double untilApex = clientTick + puzzle.activeRiseTicks() - animation.renderTime();
+            animation.transitionPin(pin, Math.min(PIN_TRANSITION_DURATION_TICKS,
+                    Math.max(0.0D, untilApex)));
+            animation.startBounce();
             if (insight > 0) {
-                speedHintShown = true;
+                speedHint = Component.translatable("lock.lockscontinue.pin_speed_hint",
+                        String.format(Locale.ROOT, "%.1f", puzzle.activeRiseTicks()),
+                        String.format(Locale.ROOT, "%.1f", puzzle.activeHoldTicks()));
             }
             LockSoundHelper.playUi(com.kaleblangley.lockscontinue.sound.ModSounds.PIN_FAIL.get(),
                     soundVolumeMultiplier, 1.0F);
@@ -317,13 +308,15 @@ public final class PinLockGame implements LockGame {
         }
 
         pendingPin = puzzle.activePin();
+        pendingPinPosition = animation.renderedPinPosition(pendingPin);
+        animation.transitionPin(pendingPin, 0.0D);
         awaitingResult = true;
         sender.send(LockAction.pinSet(pendingPin));
     }
 
     private void movePickX(float delta) {
-        pickTargetX = clampPickX(pickTargetX + delta);
-        pickX += (pickTargetX - pickX) * inputNudge;
+        animation.movePick(delta, slotX(0) - PIN_RANGE_HALF_WIDTH,
+                slotX(puzzle.pinCount() - 1) + PIN_RANGE_HALF_WIDTH);
     }
 
     /** Converts a per-tick easing response to the faster animation clock. */
@@ -333,28 +326,15 @@ public final class PinLockGame implements LockGame {
 
     private int pinUnderPick() {
         for (int i = 0; i < puzzle.pinCount(); i++) {
-            if (Math.abs(pickX - slotX(i)) <= PIN_RANGE_HALF_WIDTH) {
+            if (Math.abs(animation.renderedPickX() - slotX(i)) <= PIN_RANGE_HALF_WIDTH) {
                 return i;
             }
         }
         return -1;
     }
 
-    private float clampPickX(float value) {
-        float min = slotX(0) - PIN_RANGE_HALF_WIDTH;
-        float max = slotX(puzzle.pinCount() - 1) + PIN_RANGE_HALF_WIDTH;
-        return Math.max(min, Math.min(max, value));
-    }
-
     private static float pickY(float position) {
         return 25.0F - PICK_LIFT_PIXELS * position;
-    }
-
-    private static float pickBouncePosition(float elapsedTicks) {
-        if (elapsedTicks <= 0.0F || elapsedTicks >= PICK_BOUNCE_DURATION_TICKS) {
-            return 0.0F;
-        }
-        return (float) Math.sin(Math.PI * elapsedTicks / PICK_BOUNCE_DURATION_TICKS);
     }
 
     private static float pinY(float position) {
